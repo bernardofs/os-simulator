@@ -25,6 +25,10 @@ class Scheduling(ABC):
             self.cur_processes.append(self.processes[0])
             self.processes = self.processes[1:]
 
+    def set_executed(self, process: Process, ram: RAM):
+        for page in process.pages:
+            ram.set_executed(page)        
+
     @abstractmethod
     def execute(self):
         pass
@@ -34,21 +38,32 @@ class FIFO(Scheduling):
     def __init__(self):
         super().__init__()
 
-    def execute(self, waiting_processes: list):
+    def print_rect():
+        print ('t = ', 'empty')        
 
-        if len(self.processes) == 0:
+    # returns the process executed and a flag determining whether it has finished
+    def execute(self, waiting_processes: list, t: int, ram: RAM) -> (Process, bool):
+
+        if len(waiting_processes) == 0:
             print ('t = ', 'empty')
-            return
+            return Process(-1, -1, -1, -1, -1, -1), False
 
-        front = self.waiting_processes[0]
+        front = waiting_processes[0]
+        assert (front.exec_time != 0)
+        print ('front.exec_time', front.exec_time)
+        self.set_executed(front, ram)
 
-        self.print_rect(front, t)
-
-        if self.processes[0].exec_time == 0
-            self.processes = self.processes[1:]
+        # self.print_rect(front, t)
+        finished = False
+        if waiting_processes[0].exec_time == 1:
+            pid = front.pid
+            waiting_processes = waiting_processes[1:]
             self.turnaround = self.turnaround + (t - front.arrival_time)
-        else
-            self.processes[0].exec_time = self.processes[0].exec_time - 1          
+            finished = True
+        else:
+            waiting_processes[0].exec_time = waiting_processes[0].exec_time - 1          
+            finished = False
+        return front, finished
 
 class SJF(Scheduling):
 
@@ -82,7 +97,7 @@ class SJF(Scheduling):
 
                 if front.exec_time > 0:
                     self.add_process_at_the_beginning(front)
-                else 
+                else:
                     self.turnaround = self.turnaround + (t - arrival_time)
 
 
@@ -132,7 +147,7 @@ class Round_Robin(Scheduling):
                 self.cur_processes.append(front)
                 self.apply_overhead()
                 t = t + self.overhead
-            else 
+            else:
                 self.turnaround = self.turnaround + (t - arrival_time)
 
 
@@ -184,31 +199,31 @@ class EDF(Scheduling):
                 self.cur_processes.append(front)
                 self.apply_overhead()
                 t = t + self.overhead
-            else 
+            else:
                 self.turnaround = self.turnaround + (t - arrival_time)
 
-# Tests
+# # Tests
 
-arr = [Process(1, 1, 2, 10, 0), Process(9, 3, 2, 10, 0), Process(3, 6, 1, 101, 0)]
+# arr = [Process(1, 1, 2, 10, 0), Process(9, 3, 2, 10, 0), Process(3, 6, 1, 101, 0)]
 
-print('FIFO')
-x = FIFO(arr)
-x.execute()
+# print('FIFO')
+# x = FIFO(arr)
+# x.execute()
 
-arr = [Process(1, 3, 3, 10, 0), Process(9, 4, 6, 10, 0), Process(3, 20, 3, 0, 0)]
+# arr = [Process(1, 3, 3, 10, 0), Process(9, 4, 6, 10, 0), Process(3, 20, 3, 0, 0)]
 
-print('\nSJF')
-x = SJF(arr)
-x.execute()
+# print('\nSJF')
+# x = SJF(arr)
+# x.execute()
 
-arr = [Process(1, 3, 3, 10, 0), Process(9, 4, 6, 10, 0), Process(3, 20, 3, 0, 0)]
+# arr = [Process(1, 3, 3, 10, 0), Process(9, 4, 6, 10, 0), Process(3, 20, 3, 0, 0)]
 
-print('\nRR')
-x = Round_Robin(arr, 2, 1)
-x.execute()
+# print('\nRR')
+# x = Round_Robin(arr, 2, 1)
+# x.execute()
 
-arr = [Process(1, 3, 3, 12, 5), Process(9, 4, 6, 11, 10), Process(3, 20, 3, 0, 3)]
+# arr = [Process(1, 3, 3, 12, 5), Process(9, 4, 6, 11, 10), Process(3, 20, 3, 0, 3)]
 
-print('\nEDF')
-x = EDF(arr, 2, 1)
-x.execute()
+# print('\nEDF')
+# x = EDF(arr, 2, 1)
+# x.execute()

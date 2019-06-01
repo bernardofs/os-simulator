@@ -1,8 +1,14 @@
 class Page:
 
-	def __init__(self, associated_pid_process: int, process_index: int, index_in_RAM: int):
+	def __init__(self, associated_pid_process: int, process_index: int):
 		self.associated_pid_process = associated_pid_process
 		self.process_index = process_index
+
+	def __eq__(self, other): 
+		if not isinstance(other, Page):
+			return NotImplemented
+
+		return self.associated_pid_process == other.associated_pid_process and self.process_index == other.process_index
 
 class Table:
 
@@ -18,7 +24,6 @@ class Table:
 		self.pages[self.ptr] = page
 		self.present[i] = 1
 		self.ptr = (self.ptr + 1) % len(self.pages)
-		
 
 	def delete_page(self, page: Page):
 		for i, page_in_list in enumerate(self.pages):
@@ -30,13 +35,13 @@ class Table:
 class Process:
 
     def __init__(self, pid: int, arrival_time: int, exec_time: int, deadline: int, priority: int, number_of_pages: int):
-        self.__pid = pid
-        self.__arrival_time = arrival_time
-        self.__exec_time = exec_time
-        self.__deadline = deadline
-        self.__priority = priority
-        self.__pages = [Page(pid, i) for i in range(number_of_pages)]
-        self.__pages_in_RAM = 0
+        self.pid = pid
+        self.arrival_time = arrival_time
+        self.exec_time = exec_time
+        self.deadline = deadline
+        self.priority = priority
+        self.pages = [Page(pid, i) for i in range(number_of_pages)]
+        self.pages_in_RAM = 0
 
     # checks whether the process is ready to execute
     # returns false if it is blocked
@@ -44,7 +49,7 @@ class Process:
     	return self.pages_in_RAM == len(self.pages)
 
     def get_number_of_pages(self):
-    	return len(pages)
+    	return len(self.pages)
 
 class Disk:
 
@@ -66,27 +71,54 @@ class RAM:
 	# - RAM initializes empty
 	def __init__(self, RAM_size: int):
 		self.pages = [Page(-1, -1)]*RAM_size
+		# a page should be executed at least one time to be deleted
 		self.executed = [False]*RAM_size
 		self.RAM_size = RAM_size
 
-	def get_index(self, page: Page):
+	def get_index(self, page: Page) -> int:
 		for i, page_in_list in enumerate(self.pages):
 			if page == page_in_list:
 				return i
 
-	def __get_first_empty_page(self):
+	def set_executed(self, page: Page):
+		idx = self.get_index(page)
+		self.executed[idx] = True
+
+	def print(self):
+		print ('RAM')
+		for page in self.pages:
+			print (page.associated_pid_process, page.process_index)
+		print (self.executed)
+		print (self.RAM_size)
+		print ('')
+
+	def get_first_empty_page(self):
 		for i, page in enumerate(self.pages):
-			if page.associated_pid_process = -1:
+			if page.associated_pid_process == -1:
 				return i
+		# if there isn't a page in RAM to be replaced
 		return -1
 
+	def was_executed(self, page: Page):
+		for i, page_in_list in enumerate(self.pages):
+			if page_in_list == page:
+				return self.executed[i]
+
+		assert False
+
 	def add_page(self, page: Page):
-		RAM_idx = get_first_empty_page()
+		RAM_idx = self.get_first_empty_page()
+		if RAM_idx == -1:
+			return
 		self.pages[RAM_idx] = page
-		self.executed[i] = False
+		self.executed[RAM_idx] = False
 
 	def delete_page(self, page: Page):
-		idx = get_index(page)
+		
+		print ('deleting: ', page.associated_pid_process, page.process_index)
+
+		idx = self.get_index(page)
+
 		self.pages[idx] = Page(-1, -1)
 		for i, page_in_list in enumerate(self.pages):
 			if page == page_in_list:
