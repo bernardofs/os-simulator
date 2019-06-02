@@ -10,7 +10,7 @@ class RP_FIFO:
         # queue to store pages which are waiting to enter in RAM that are neither
         # in RAM or in disk
         self._waiting_pages = []
-        self.ram = RAM(5)
+        self.ram = RAM(15)
         self.disk = Disk()
         self.table = Table(15)
         self.time = 0
@@ -57,7 +57,9 @@ class RP_FIFO:
         return front
 
     def __get_number_of_pages_to_be_added(self):
-        return min(len(self._pages_in_disk) + len(self._waiting_pages), self.elements_per_time)
+        return min(
+            len(self._pages_in_disk) + len(self._waiting_pages), self.elements_per_time
+        )
 
     def delete_a_page_in_RAM(self):
         # this element must be executed at least once and
@@ -139,7 +141,7 @@ class RP_FIFO:
             self.ram.delete_page(page)
             self.disk.delete_page(page)
             self.table.delete_page(page)
-        
+
     # for each process it will be checked if its state is blocked or waiting
     def check_state(self):
 

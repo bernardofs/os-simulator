@@ -33,8 +33,8 @@ class Scheduling(ABC):
     def execute(self):
         pass
 
-class Premptive(Scheduling):
 
+class Premptive(Scheduling):
     def __init__(self, quantum: int, overhead: int):
         self.quantum = quantum
         self.overhead = overhead
@@ -42,8 +42,8 @@ class Premptive(Scheduling):
         self.cnt_overhead = -1
         super().__init__()
 
-class Non_Premptive(Scheduling):
 
+class Non_Premptive(Scheduling):
     def __init__(self):
         super().__init__()
 
@@ -64,8 +64,7 @@ class FIFO(Non_Premptive):
         print("front.exec_time", front.exec_time)
         self.set_executed(front, ram)
 
-        if waiting_processes[0].exec_time == 1:
-            pid = front.pid
+        if front.exec_time == 1:
             waiting_processes = waiting_processes[1:]
             self.turnaround = self.turnaround + (t - front.arrival_time + 1)
             self.finished = True
@@ -81,13 +80,13 @@ class SJF(Non_Premptive):
 
     def execute(self, waiting_processes: list, t: int, ram: RAM) -> (Process, bool):
 
-        if self.finished:
-            waiting_processes.sort(key=lambda p: p.exec_time)
-            self.finished = False
-
         if len(waiting_processes) == 0:
             print("t = ", t, "empty")
             return Process(-1, -1, -1, -1, -1, -1), False
+
+        if self.finished:
+            waiting_processes.sort(key=lambda p: p.exec_time)
+            self.finished = False
 
         front = waiting_processes[0]
         assert front.exec_time != 0
@@ -95,9 +94,8 @@ class SJF(Non_Premptive):
         self.set_executed(front, ram)
 
         finished = False
-        if waiting_processes[0].exec_time == 1:
-            pid = front.pid
-            waiting_processes = waiting_processes[1:]
+        if front.exec_time == 1:
+            # waiting_processes = waiting_processes[1:]
             self.turnaround = self.turnaround + (t - front.arrival_time + 1)
             finished = True
         else:
@@ -116,7 +114,7 @@ class Round_Robin(Premptive):
         # if cnt_overhead is negative, the process is executing
         if self.cnt_overhead >= 0:
 
-            print ('\n\n\n\nOVERHEAD\n\n\n\n')
+            print("\n\n\n\nOVERHEAD\n\n\n\n")
 
             self.cnt_overhead += 1
             if self.cnt_overhead == self.overhead:
@@ -134,12 +132,11 @@ class Round_Robin(Premptive):
         self.set_executed(front, ram)
 
         finished = False
-        if waiting_processes[0].exec_time == 1:
-            pid = front.pid
+        if front.exec_time == 1:
             # waiting_processes = waiting_processes[1:]
             self.turnaround = self.turnaround + (t - front.arrival_time + 1)
             finished = True
-            self.overhead = -1
+            self.cnt_overhead = -1
             self.cnt_quantum = 0
         else:
             waiting_processes[0].exec_time = waiting_processes[0].exec_time - 1
@@ -158,54 +155,58 @@ class Round_Robin(Premptive):
 
 
 class EDF(Premptive):
-    def __init__(self, processes: list, quantum: int, overhead: int):
+    def __init__(self, quantum: int, overhead: int):
         self.quantum = quantum
         self.overhead = overhead
-        super().__init__(processes)
+        super().__init__(quantum, overhead)
 
-    def print_rect(self, process: Process, t: int):
-        print(process.number, process.exec_time, t)
+    def execute(self, waiting_processes: list, t: int, ram: RAM) -> (Process, bool):
 
-    def apply_overhead(self):
-        cnt = self.overhead
-        while cnt > 0:
-            print("overhead")
-            cnt = cnt - 1
+        # if cnt_overhead is negative, the process is executing
+        if self.cnt_overhead >= 0:
+            print("\n\n\n\nOVERHEAD\n\n\n\n")
+            self.cnt_overhead += 1
+            if self.cnt_overhead == self.overhead:
+                self.cnt_overhead = -1
+                self.cnt_quantum = 0
+            return Process(-1, -1, -1, -1, -1, -1), False
 
-    def execute(self):
+        if len(waiting_processes) == 0:
+            print ("t = ", t, "empty")
+            return Process(-1, -1, -1, -1, -1, -1), False
 
-        self.processes.sort(key=lambda p: p.arrival_time)
+        if self.finished:
+            waiting_processes.sort(key=lambda p: p.deadline)
+            self.finished = False
 
-        t = 0
-        while len(self.processes) > 0 or len(self.cur_processes) > 0:
+        front = waiting_processes[0]
+        assert front.exec_time != 0
+        print("front.exec_time", front.exec_time)
+        self.set_executed(front, ram)
 
-            self.get_arrived_processes(t)
+        finished = False
+        if front.exec_time == 1:
+            # waiting_processes = waiting_processes[1:]
+            self.turnaround = self.turnaround + (t - front.arrival_time + 1)
+            finished = True
+            self.cnt_overhead = -1
+            self.cnt_quantum = 0
+        else:
+            waiting_processes[0].exec_time = waiting_processes[0].exec_time - 1
+            finished = False
 
-            if len(self.cur_processes) == 0:
-                print("t = ", t, "empty")
-                t = t + 1
-                continue
+        self.cnt_quantum += 1
+        if self.cnt_quantum == self.quantum:
+            if not finished:
+                self.cnt_overhead = 0
+            self.cnt_quantum = 0
+            # move process to the end of the queue if it will run again
+            if not finished:
+                waiting_processes = waiting_processes[1:] + [front]
 
-            self.cur_processes.sort(key=lambda p: p.deadline)
-
-            front = self.get_first_process()
-            self.remove_process_at_the_beginning()
-
-            time_of_execution = min(self.quantum, front.exec_time)
-            while time_of_execution > 0:
-                self.print_rect(front, t)
-                time_of_execution = time_of_execution - 1
-                t = t + 1
-
-            self.get_arrived_processes(t)
-
-            if front.exec_time > self.quantum:
-                front.exec_time -= self.quantum
-                self.cur_processes.append(front)
-                self.apply_overhead()
-                t = t + self.overhead
-            else:
-                self.turnaround = self.turnaround + (t - arrival_time)
+        print('overhead =', self.cnt_overhead)
+        # returns a flag to indicates whether the process has finished and this process
+        return front, finished
 
 
 # # Tests
