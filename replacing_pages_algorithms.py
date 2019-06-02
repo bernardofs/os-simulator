@@ -14,7 +14,7 @@ class RP_FIFO:
         self.disk = Disk()
         self.table = Table(15)
         self.time = 0
-        self.blocked_processes = []
+        self.blocked_processes = processes.copy()
         self.waiting_processes = []
         self.processes = processes
         self.cur_processes = processes.copy()
@@ -56,6 +56,9 @@ class RP_FIFO:
         self._waiting_pages = self._waiting_pages[1:]
         return front
 
+    def __get_number_of_pages_to_be_added(self):
+        return min(len(self._pages_in_disk) + len(self._waiting_pages), self.elements_per_time)
+
     def delete_a_page_in_RAM(self):
         # this element must be executed at least once and
         # it shouldn't be running at the moment
@@ -75,12 +78,12 @@ class RP_FIFO:
         return Page(-1, -1)
 
     def delete_first_elements_from_pages_in_RAM(self):
-        cnt = self.elements_per_time
+        # cnt represents the number of pages to be removed
+        cnt = self.__get_number_of_pages_to_be_added()
         while self._pages_in_RAM and cnt > 0:
             front = self.delete_a_page_in_RAM()
             if front.associated_pid_process == -1:
                 return
-            self.disk.add_page(front)
             cnt -= 1
 
     def add_first_pages_to_RAM(self):
@@ -131,11 +134,12 @@ class RP_FIFO:
             self.blocked_processes.remove(process)
         for i in range(process.get_number_of_pages()):
             page = Page(process.pid, i)
+            # if page in self._pages_in_RAM:
             self._pages_in_RAM.remove(page)
             self.ram.delete_page(page)
             self.disk.delete_page(page)
             self.table.delete_page(page)
-
+        
     # for each process it will be checked if its state is blocked or waiting
     def check_state(self):
 
@@ -145,21 +149,20 @@ class RP_FIFO:
             for page in process.pages:
                 if page in self.ram.pages:
                     cnt_waiting += 1
-                elif page in self._waiting_pages:
+                elif page in self._waiting_pages or page in self._pages_in_disk:
                     cnt_blocked += 1
 
             # if page should be in waiting state
             if cnt_waiting == process.get_number_of_pages():
                 if process not in self.waiting_processes:
+                    self.waiting_processes.append(process)
                     if process in self.blocked_processes:
                         self.blocked_processes.remove(process)
-                    self.waiting_processes.append(process)
-                    # TODO CHANGE TABLE
-            elif cnt_blocked > 0:
+            else:
                 if process not in self.blocked_processes:
+                    self.blocked_processes.append(process)
                     if process in self.waiting_processes:
                         self.waiting_processes.remove(process)
-                    self.blocked_processes.append(process)
 
     def there_is_processes(self) -> bool:
         return (

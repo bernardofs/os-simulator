@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 class Scheduling(ABC):
     def __init__(self):
         self.turnaround = 0
+        self.finished = True
 
     def add_process_at_the_end(self):
         self.cur_processes.append(process)
@@ -32,13 +33,24 @@ class Scheduling(ABC):
     def execute(self):
         pass
 
+class Premptive(Scheduling):
 
-class FIFO(Scheduling):
+    def __init__(self, quantum: int, overhead: int):
+        self.quantum = quantum
+        self.overhead = overhead
+        self.cnt_quantum = 0
+        self.cnt_overhead = -1
+        super().__init__()
+
+class Non_Premptive(Scheduling):
+
     def __init__(self):
         super().__init__()
 
-    def print_rect():
-        print("t = ", "empty")
+
+class FIFO(Non_Premptive):
+    def __init__(self):
+        super().__init__()
 
     # returns the process executed and a flag determining whether it has finished
     def execute(self, waiting_processes: list, t: int, ram: RAM) -> (Process, bool):
@@ -52,24 +64,26 @@ class FIFO(Scheduling):
         print("front.exec_time", front.exec_time)
         self.set_executed(front, ram)
 
-        # self.print_rect(front, t)
-        finished = False
         if waiting_processes[0].exec_time == 1:
             pid = front.pid
             waiting_processes = waiting_processes[1:]
             self.turnaround = self.turnaround + (t - front.arrival_time + 1)
-            finished = True
+            self.finished = True
         else:
             waiting_processes[0].exec_time = waiting_processes[0].exec_time - 1
-            finished = False
-        return front, finished
+            self.finished = False
+        return front, self.finished
 
 
-class SJF(Scheduling):
+class SJF(Non_Premptive):
     def __init__(self):
         super().__init__()
 
     def execute(self, waiting_processes: list, t: int, ram: RAM) -> (Process, bool):
+
+        if self.finished:
+            waiting_processes.sort(key=lambda p: p.exec_time)
+            self.finished = False
 
         if len(waiting_processes) == 0:
             print("t = ", t, "empty")
@@ -92,56 +106,58 @@ class SJF(Scheduling):
         return front, finished
 
 
-class Round_Robin(Scheduling):
-    def __init__(self, processes: list, quantum: int, overhead: int):
-        self.quantum = quantum
-        self.overhead = overhead
-        super().__init__(processes)
+class Round_Robin(Premptive):
+    def __init__(self, quantum: int, overhead: int):
+        assert quantum >= 1 and overhead >= 1
+        super().__init__(quantum=quantum, overhead=overhead)
 
-    def print_rect(self, process: Process, t: int):
-        print(process.number, process.exec_time, t)
+    def execute(self, waiting_processes: list, t: int, ram: RAM) -> (Process, bool):
 
-    def apply_overhead(self):
-        cnt = self.overhead
-        while cnt > 0:
-            print("overhead")
-            cnt = cnt - 1
+        # if cnt_overhead is negative, the process is executing
+        if self.cnt_overhead >= 0:
 
-    def execute(self):
+            print ('\n\n\n\nOVERHEAD\n\n\n\n')
 
-        self.processes.sort(key=lambda p: p.arrival_time)
+            self.cnt_overhead += 1
+            if self.cnt_overhead == self.overhead:
+                self.cnt_overhead = -1
+                self.cnt_quantum = 0
+            return Process(-1, -1, -1, -1, -1, -1), False
 
-        t = 0
-        while len(self.processes) > 0 or len(self.cur_processes) > 0:
+        if len(waiting_processes) == 0:
+            print("t = ", t, "empty")
+            return Process(-1, -1, -1, -1, -1, -1), False
 
-            self.get_arrived_processes(t)
+        front = waiting_processes[0]
+        assert front.exec_time != 0
+        print("front.exec_time", front.exec_time)
+        self.set_executed(front, ram)
 
-            if len(self.cur_processes) == 0:
-                print("t = ", t, "empty")
-                t = t + 1
-                continue
+        finished = False
+        if waiting_processes[0].exec_time == 1:
+            pid = front.pid
+            # waiting_processes = waiting_processes[1:]
+            self.turnaround = self.turnaround + (t - front.arrival_time + 1)
+            finished = True
+            self.overhead = -1
+            self.cnt_quantum = 0
+        else:
+            waiting_processes[0].exec_time = waiting_processes[0].exec_time - 1
+            finished = False
 
-            front = self.get_first_process()
-            self.remove_process_at_the_beginning()
+        self.cnt_quantum += 1
+        if self.cnt_quantum == self.quantum:
+            self.cnt_overhead = 0
+            self.cnt_quantum = 0
+            # move process to the end of the queue if it will run again
+            if not finished:
+                waiting_processes = waiting_processes[1:] + [front]
 
-            time_of_execution = min(self.quantum, front.exec_time)
-            while time_of_execution > 0:
-                self.print_rect(front, t)
-                time_of_execution = time_of_execution - 1
-                t = t + 1
-
-            self.get_arrived_processes(t)
-
-            if front.exec_time > self.quantum:
-                front.exec_time -= self.quantum
-                self.cur_processes.append(front)
-                self.apply_overhead()
-                t = t + self.overhead
-            else:
-                self.turnaround = self.turnaround + (t - arrival_time)
+        # returns a flag to indicates whether the process has finished and this process
+        return front, finished
 
 
-class EDF(Scheduling):
+class EDF(Premptive):
     def __init__(self, processes: list, quantum: int, overhead: int):
         self.quantum = quantum
         self.overhead = overhead
