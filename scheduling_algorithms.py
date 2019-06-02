@@ -2,8 +2,8 @@ from process import *
 import operator
 from abc import ABC, abstractmethod
 
-class Scheduling(ABC):
 
+class Scheduling(ABC):
     def __init__(self):
         self.cur_processes = []
         self.turnaround = 0
@@ -12,45 +12,45 @@ class Scheduling(ABC):
         self.cur_processes.append(process)
 
     def add_process_at_the_beginning(self, process: Process):
-        self.cur_processes = [process] + self.cur_processes        
+        self.cur_processes = [process] + self.cur_processes
 
     def remove_process_at_the_beginning(self):
         self.cur_processes = self.cur_processes[1:]
 
     def get_first_process(self):
-        return self.cur_processes[0];
+        return self.cur_processes[0]
 
     def get_arrived_processes(self, t: int):
-        while (len(self.processes) > 0 and self.processes[0].arrival_time <= t):
+        while len(self.processes) > 0 and self.processes[0].arrival_time <= t:
             self.cur_processes.append(self.processes[0])
             self.processes = self.processes[1:]
 
     def set_executed(self, process: Process, ram: RAM):
         for page in process.pages:
-            ram.set_executed(page)        
+            ram.set_executed(page)
 
     @abstractmethod
     def execute(self):
         pass
 
-class FIFO(Scheduling):
 
+class FIFO(Scheduling):
     def __init__(self):
         super().__init__()
 
     def print_rect():
-        print ('t = ', 'empty')        
+        print("t = ", "empty")
 
     # returns the process executed and a flag determining whether it has finished
     def execute(self, waiting_processes: list, t: int, ram: RAM) -> (Process, bool):
 
         if len(waiting_processes) == 0:
-            print ('t = ', 'empty')
+            print("t = ", "empty")
             return Process(-1, -1, -1, -1, -1, -1), False
 
         front = waiting_processes[0]
-        assert (front.exec_time != 0)
-        print ('front.exec_time', front.exec_time)
+        assert front.exec_time != 0
+        print("front.exec_time", front.exec_time)
         self.set_executed(front, ram)
 
         # self.print_rect(front, t)
@@ -61,73 +61,72 @@ class FIFO(Scheduling):
             self.turnaround = self.turnaround + (t - front.arrival_time)
             finished = True
         else:
-            waiting_processes[0].exec_time = waiting_processes[0].exec_time - 1          
+            waiting_processes[0].exec_time = waiting_processes[0].exec_time - 1
             finished = False
         return front, finished
 
+
 class SJF(Scheduling):
+    def __init__(self, processes: list):
+        super().__init__(processes)
 
-        def __init__(self, processes: list):
-            super().__init__(processes)
+    def print_rect(self, process: Process, t: int):
+        print(process.number, process.exec_time, t)
 
-        def print_rect(self, process: Process, t: int):
-            print (process.number, process.exec_time, t)
+    def execute(self):
 
-        def execute(self):
+        self.processes.sort(key=lambda p: p.arrival_time)
 
-            self.processes.sort(key=lambda p: p.arrival_time)
+        t = 0
+        while len(self.processes) > 0 or len(self.cur_processes) > 0:
 
-            t = 0
-            while len(self.processes) > 0 or len(self.cur_processes) > 0:
+            self.get_arrived_processes(t)
 
-                self.get_arrived_processes(t)
-
-                if(len(self.cur_processes) == 0):
-                    print ('t = ', t, 'empty')
-                    t = t + 1
-                    continue
-
-                self.cur_processes.sort(key=lambda p: p.exec_time)
-                front = self.get_first_process()
-                self.remove_process_at_the_beginning()
-
-                self.print_rect(front, t)
-                front.exec_time = front.exec_time - 1
+            if len(self.cur_processes) == 0:
+                print("t = ", t, "empty")
                 t = t + 1
+                continue
 
-                if front.exec_time > 0:
-                    self.add_process_at_the_beginning(front)
-                else:
-                    self.turnaround = self.turnaround + (t - arrival_time)
+            self.cur_processes.sort(key=lambda p: p.exec_time)
+            front = self.get_first_process()
+            self.remove_process_at_the_beginning()
+
+            self.print_rect(front, t)
+            front.exec_time = front.exec_time - 1
+            t = t + 1
+
+            if front.exec_time > 0:
+                self.add_process_at_the_beginning(front)
+            else:
+                self.turnaround = self.turnaround + (t - arrival_time)
 
 
 class Round_Robin(Scheduling):
-
     def __init__(self, processes: list, quantum: int, overhead: int):
         self.quantum = quantum
         self.overhead = overhead
         super().__init__(processes)
 
     def print_rect(self, process: Process, t: int):
-        print (process.number, process.exec_time, t)
+        print(process.number, process.exec_time, t)
 
     def apply_overhead(self):
         cnt = self.overhead
-        while(cnt > 0):
-            print ("overhead")
+        while cnt > 0:
+            print("overhead")
             cnt = cnt - 1
 
     def execute(self):
-        
+
         self.processes.sort(key=lambda p: p.arrival_time)
-        
+
         t = 0
         while len(self.processes) > 0 or len(self.cur_processes) > 0:
 
             self.get_arrived_processes(t)
 
-            if(len(self.cur_processes) == 0):
-                print ('t = ', t, 'empty')
+            if len(self.cur_processes) == 0:
+                print("t = ", t, "empty")
                 t = t + 1
                 continue
 
@@ -135,7 +134,7 @@ class Round_Robin(Scheduling):
             self.remove_process_at_the_beginning()
 
             time_of_execution = min(self.quantum, front.exec_time)
-            while (time_of_execution > 0):
+            while time_of_execution > 0:
                 self.print_rect(front, t)
                 time_of_execution = time_of_execution - 1
                 t = t + 1
@@ -152,19 +151,18 @@ class Round_Robin(Scheduling):
 
 
 class EDF(Scheduling):
-
     def __init__(self, processes: list, quantum: int, overhead: int):
         self.quantum = quantum
         self.overhead = overhead
         super().__init__(processes)
 
     def print_rect(self, process: Process, t: int):
-        print (process.number, process.exec_time, t)
+        print(process.number, process.exec_time, t)
 
     def apply_overhead(self):
         cnt = self.overhead
-        while(cnt > 0):
-            print ("overhead")
+        while cnt > 0:
+            print("overhead")
             cnt = cnt - 1
 
     def execute(self):
@@ -176,18 +174,18 @@ class EDF(Scheduling):
 
             self.get_arrived_processes(t)
 
-            if(len(self.cur_processes) == 0):
-                print ('t = ', t, 'empty')
+            if len(self.cur_processes) == 0:
+                print("t = ", t, "empty")
                 t = t + 1
-                continue            
+                continue
 
             self.cur_processes.sort(key=lambda p: p.deadline)
-                
+
             front = self.get_first_process()
             self.remove_process_at_the_beginning()
 
             time_of_execution = min(self.quantum, front.exec_time)
-            while (time_of_execution > 0):
+            while time_of_execution > 0:
                 self.print_rect(front, t)
                 time_of_execution = time_of_execution - 1
                 t = t + 1
@@ -201,6 +199,7 @@ class EDF(Scheduling):
                 t = t + self.overhead
             else:
                 self.turnaround = self.turnaround + (t - arrival_time)
+
 
 # # Tests
 
