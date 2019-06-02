@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 
 class Scheduling(ABC):
     def __init__(self):
-        self.cur_processes = []
         self.turnaround = 0
 
     def add_process_at_the_end(self):
@@ -58,7 +57,7 @@ class FIFO(Scheduling):
         if waiting_processes[0].exec_time == 1:
             pid = front.pid
             waiting_processes = waiting_processes[1:]
-            self.turnaround = self.turnaround + (t - front.arrival_time)
+            self.turnaround = self.turnaround + (t - front.arrival_time + 1)
             finished = True
         else:
             waiting_processes[0].exec_time = waiting_processes[0].exec_time - 1
@@ -67,38 +66,30 @@ class FIFO(Scheduling):
 
 
 class SJF(Scheduling):
-    def __init__(self, processes: list):
-        super().__init__(processes)
+    def __init__(self):
+        super().__init__()
 
-    def print_rect(self, process: Process, t: int):
-        print(process.number, process.exec_time, t)
+    def execute(self, waiting_processes: list, t: int, ram: RAM) -> (Process, bool):
 
-    def execute(self):
+        if len(waiting_processes) == 0:
+            print("t = ", t, "empty")
+            return Process(-1, -1, -1, -1, -1, -1), False
 
-        self.processes.sort(key=lambda p: p.arrival_time)
+        front = waiting_processes[0]
+        assert front.exec_time != 0
+        print("front.exec_time", front.exec_time)
+        self.set_executed(front, ram)
 
-        t = 0
-        while len(self.processes) > 0 or len(self.cur_processes) > 0:
-
-            self.get_arrived_processes(t)
-
-            if len(self.cur_processes) == 0:
-                print("t = ", t, "empty")
-                t = t + 1
-                continue
-
-            self.cur_processes.sort(key=lambda p: p.exec_time)
-            front = self.get_first_process()
-            self.remove_process_at_the_beginning()
-
-            self.print_rect(front, t)
-            front.exec_time = front.exec_time - 1
-            t = t + 1
-
-            if front.exec_time > 0:
-                self.add_process_at_the_beginning(front)
-            else:
-                self.turnaround = self.turnaround + (t - arrival_time)
+        finished = False
+        if waiting_processes[0].exec_time == 1:
+            pid = front.pid
+            waiting_processes = waiting_processes[1:]
+            self.turnaround = self.turnaround + (t - front.arrival_time + 1)
+            finished = True
+        else:
+            waiting_processes[0].exec_time = waiting_processes[0].exec_time - 1
+            finished = False
+        return front, finished
 
 
 class Round_Robin(Scheduling):

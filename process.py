@@ -119,6 +119,7 @@ class RAM:
     def __init__(self, RAM_size: int):
         self.pages = [Page(-1, -1)] * RAM_size
         # a page should be executed at least one time to be deleted
+        self.last_valid_pages = [Page(-1, -1)] * RAM_size
         self.executed = [False] * RAM_size
         self.RAM_size = RAM_size
 
@@ -135,7 +136,7 @@ class RAM:
 
     def print(self):
         print("RAM")
-        for page in self.pages:
+        for page in self.last_valid_pages:
             print(page.associated_pid_process, page.process_index)
         print(self.executed)
         print(self.RAM_size)
@@ -160,6 +161,7 @@ class RAM:
         if RAM_idx is None:
             return None
         self.pages[RAM_idx] = page
+        self.last_valid_pages[RAM_idx] = page
         self.executed[RAM_idx] = False
         return RAM_idx
 

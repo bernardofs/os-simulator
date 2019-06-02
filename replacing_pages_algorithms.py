@@ -23,7 +23,8 @@ class RP_FIFO:
         self.elements_per_time = elements_per_time
         self.running_process_pid = -1
 
-
+    def sort_waiting_processes_by_exec_time(self):
+        self.waiting_processes.sort(key=lambda p: p.exec_time)
 
     def add_pages_in_waiting_pages_from_processes(self):
         # adding all pages from processes in queue
@@ -95,29 +96,26 @@ class RP_FIFO:
             front = self.__get_and_delete_front_pages_in_disk()
             idx_in_RAM = self.ram.add_page(front)
             assert idx_in_RAM is not None
-            
+
             self.table.set_present_in_RAM(front, idx_in_RAM)
             self.disk.delete_page(front)
             self._pages_in_RAM.append(front)
             cnt -= 1
 
-        # adding all waiting pages allowed, if theres free space in ram it will be added there, 
+        # adding all waiting pages allowed, if theres free space in ram it will be added there,
         # otherwise it will be added in disk
-        while (
-            self._waiting_pages
-            and cnt > 0
-        ):
+        while self._waiting_pages and cnt > 0:
             front = self.__get_and_delete_front_waiting_pages()
             idx_in_RAM = self.ram.add_page(front)
             self.table.add_page(front)
             # if theres not a valid page to add idx_in_RAM will be None
             if idx_in_RAM is not None:
-            	self.table.set_present_in_RAM(front, idx_in_RAM)
-            	self._pages_in_RAM.append(front)
+                self.table.set_present_in_RAM(front, idx_in_RAM)
+                self._pages_in_RAM.append(front)
             else:
-            	self.disk.add_page(front)
-            	self.table.set_not_present_in_RAM(front)
-            	self._pages_in_disk.append(front)
+                self.disk.add_page(front)
+                self.table.set_not_present_in_RAM(front)
+                self._pages_in_disk.append(front)
             cnt -= 1
 
     def get_index_from_pid(self, pid: int):
@@ -140,7 +138,7 @@ class RP_FIFO:
 
     # for each process it will be checked if its state is blocked or waiting
     def check_state(self):
-        
+
         for process in self.processes:
             cnt_waiting = 0
             cnt_blocked = 0
@@ -164,7 +162,13 @@ class RP_FIFO:
                     self.blocked_processes.append(process)
 
     def there_is_processes(self) -> bool:
-        return len(self.cur_processes) + len(self._waiting_pages) + len(self._pages_in_RAM) + len(self._pages_in_disk) > 0
+        return (
+            len(self.cur_processes)
+            + len(self._waiting_pages)
+            + len(self._pages_in_RAM)
+            + len(self._pages_in_disk)
+            > 0
+        )
 
     def execute(self):
 
