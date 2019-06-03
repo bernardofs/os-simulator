@@ -38,8 +38,8 @@ def main():
 
     t = 0
 
-    while rp.there_is_processes() and t < 40:
-
+    while rp.there_is_processes():
+        
         print("\n\n\n\n\n\n\n")
 
         print("t = ", t)
