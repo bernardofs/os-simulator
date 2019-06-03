@@ -139,7 +139,6 @@ class RAM:
         for page in self.last_valid_pages:
             print(page.associated_pid_process, page.process_index)
         print(self.executed)
-        print(self.RAM_size)
         print("")
 
     def get_first_empty_page(self):
@@ -167,7 +166,7 @@ class RAM:
 
     def delete_page(self, page: Page):
 
-        print("deleting: ", page.associated_pid_process, page.process_index)
+        # print("deleting: ", page.associated_pid_process, page.process_index)
 
         idx = self.get_index(page)
         if idx is None:
