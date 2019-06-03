@@ -1,4 +1,4 @@
-from process import *
+from components import *
 import operator
 from abc import ABC, abstractmethod
 
@@ -61,7 +61,6 @@ class FIFO(Non_Premptive):
 
         front = waiting_processes[0]
         assert front.exec_time != 0
-        print("front.exec_time", front.exec_time)
         self.set_executed(front, ram)
 
         if front.exec_time == 1:
@@ -90,7 +89,6 @@ class SJF(Non_Premptive):
 
         front = waiting_processes[0]
         assert front.exec_time != 0
-        print("front.exec_time", front.exec_time)
         self.set_executed(front, ram)
 
         finished = False
@@ -128,7 +126,6 @@ class Round_Robin(Premptive):
 
         front = waiting_processes[0]
         assert front.exec_time != 0
-        print("front.exec_time", front.exec_time)
         self.set_executed(front, ram)
 
         finished = False
@@ -181,7 +178,6 @@ class EDF(Premptive):
 
         front = waiting_processes[0]
         assert front.exec_time != 0
-        print("front.exec_time", front.exec_time)
         self.set_executed(front, ram)
 
         finished = False
@@ -204,33 +200,6 @@ class EDF(Premptive):
             if not finished:
                 waiting_processes = waiting_processes[1:] + [front]
 
-        print('overhead =', self.cnt_overhead)
         # returns a flag to indicates whether the process has finished and this process
         return front, finished
 
-
-# # Tests
-
-# arr = [Process(1, 1, 2, 10, 0), Process(9, 3, 2, 10, 0), Process(3, 6, 1, 101, 0)]
-
-# print('FIFO')
-# x = FIFO(arr)
-# x.execute()
-
-# arr = [Process(1, 3, 3, 10, 0), Process(9, 4, 6, 10, 0), Process(3, 20, 3, 0, 0)]
-
-# print('\nSJF')
-# x = SJF(arr)
-# x.execute()
-
-# arr = [Process(1, 3, 3, 10, 0), Process(9, 4, 6, 10, 0), Process(3, 20, 3, 0, 0)]
-
-# print('\nRR')
-# x = Round_Robin(arr, 2, 1)
-# x.execute()
-
-# arr = [Process(1, 3, 3, 12, 5), Process(9, 4, 6, 11, 10), Process(3, 20, 3, 0, 3)]
-
-# print('\nEDF')
-# x = EDF(arr, 2, 1)
-# x.execute()
